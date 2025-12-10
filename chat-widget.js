@@ -1,14 +1,26 @@
 /* Simple embeddable chat widget for n8n webhook (text + Vietnamese voice) */
 (function () {
   const OPTIONS = {
-    webhookUrl: 'https://ai-assistant.bsr.com.vn:5678/webhook/ca181ac5-1b33-4e41-bc32-9b2e07347f3f/chat',
-    title: 'Hỗ trợ',
+    // webhookUrl: 'https://ai-assistant.bsr.com.vn:5678/webhook/ca181ac5-1b33-4e41-bc32-9b2e07347f3f/chat',
+    webhookUrl: 'https://bsrassistant-bsrqn.msappproxy.net/webhook/ca181ac5-1b33-4e41-bc32-9b2e07347f3f/chat',
+    title: 'Trợ lý ảo AI (Bản thử nghiệm)',
     lang: 'vi-VN',
     primaryColor: '#16a34a' // Màu xanh lá cây BSR
   };
 
+  // Load Google Fonts cho font đẹp hơn
+  const fontLink = document.createElement('link');
+  fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+  fontLink.rel = 'stylesheet';
+  document.head.appendChild(fontLink);
+
   const style = document.createElement('style');
   style.textContent = `
+  * {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   #n8n-embed-toggle {
     position: fixed; bottom: 24px; right: 24px;
     width: 60px; height: 60px; border-radius: 50%;
@@ -45,10 +57,13 @@
     color: #fff; font-weight: 600; font-size: 16px;
     display: flex; align-items: center; gap: 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-family: inherit;
   }
-  #n8n-embed-header::before {
-    content: '💬';
-    font-size: 20px;
+  #n8n-embed-header-logo {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
   }
   #n8n-embed-messages {
     padding: 20px;
@@ -56,6 +71,8 @@
     overflow-y: auto;
     overflow-x: hidden;
     font-size: 14px;
+    font-weight: 400;
+    line-height: 1.6;
     background: #fafbfc;
     scroll-behavior: smooth;
   }
@@ -108,11 +125,12 @@
     max-width: 75%;
     padding: 12px 16px;
     border-radius: 18px;
-    line-height: 1.5;
+    line-height: 1.6;
     background: #ffffff;
     color: #1e293b;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     word-wrap: break-word;
+    font-weight: 400;
   }
   #n8n-embed-messages .msg.user .bubble {
     background: linear-gradient(135deg, ${OPTIONS.primaryColor} 0%, #15803d 100%);
@@ -137,6 +155,7 @@
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     font-size: 14px;
+    font-weight: 400;
     outline: none;
     transition: all 0.2s;
     background: #f8fafc;
@@ -160,6 +179,7 @@
     transition: all 0.2s;
     display: flex; align-items: center; justify-content: center;
     min-width: 44px;
+    font-family: inherit;
   }
   #n8n-embed-input button:disabled {
     opacity: 0.5; cursor: not-allowed;
@@ -192,6 +212,14 @@
     color: #fff;
     border-color: #dc2626;
     box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  }
+  #n8n-embed-mic svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+  }
+  #n8n-embed-mic.listening svg {
+    fill: #fff;
   }
   #n8n-embed-mic.listening::after {
     content: '';
@@ -248,16 +276,19 @@
 
   const toggleBtn = document.createElement('button');
   toggleBtn.id = 'n8n-embed-toggle';
-  toggleBtn.textContent = '💬';
+  toggleBtn.textContent = '🤖';
 
   const box = document.createElement('div');
   box.id = 'n8n-embed-box';
   box.innerHTML = `
-    <div id="n8n-embed-header">${OPTIONS.title}</div>
+    <div id="n8n-embed-header">
+      <img id="n8n-embed-header-logo" src="./logoBSRNew.png" alt="BSR" onerror="this.style.display='none'">
+      <span>${OPTIONS.title}</span>
+    </div>
     <div id="n8n-embed-messages"></div>
     <div id="n8n-embed-input">
       <input id="n8n-embed-text" type="text" placeholder="Nhập tin nhắn..." />
-      <button id="n8n-embed-mic" title="Nhấn để nói">🎤</button>
+      <button id="n8n-embed-mic" title="Nhấn để nói"></button>
       <button id="n8n-embed-send">Gửi</button>
     </div>
   `;
@@ -265,10 +296,40 @@
   document.body.appendChild(toggleBtn);
   document.body.appendChild(box);
 
+  // Tạo SVG icon mic hiện đại
+  function createMicIcon(isListening = false) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', isListening ? '#fff' : 'currentColor');
+    svg.innerHTML = `
+      <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v1a7 7 0 0 1-14 0v-1h2v1a5 5 0 0 0 10 0v-1h2z"/>
+      <path d="M11 19h2v3h-2z"/>
+    `;
+    return svg;
+  }
+
+  // Tạo SVG icon mic đang nghe (với sóng)
+  function createMicListeningIcon() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', '#fff');
+    svg.innerHTML = `
+      <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v1a7 7 0 0 1-14 0v-1h2v1a5 5 0 0 0 10 0v-1h2z"/>
+      <path d="M11 19h2v3h-2z"/>
+    `;
+    return svg;
+  }
+
   const messages = box.querySelector('#n8n-embed-messages');
   const input = box.querySelector('#n8n-embed-text');
   const sendBtn = box.querySelector('#n8n-embed-send');
   const micBtn = box.querySelector('#n8n-embed-mic');
+  
+  // Thêm icon mic vào button
+  micBtn.appendChild(createMicIcon());
+  
   let typingEl = null;
   let isPending = false;
 
@@ -340,15 +401,13 @@
     messages.scrollTop = messages.scrollHeight;
   }
 
-  // Persist sessionId for Chat Trigger + Simple Memory
+  // Tạo sessionId mới mỗi lần refresh trang (không lưu vào localStorage)
+  let currentSessionId = null;
   function getSessionId() {
-    const KEY = 'n8n-chat-session-id';
-    let sid = localStorage.getItem(KEY);
-    if (!sid) {
-      sid = 'sess-' + Math.random().toString(36).slice(2);
-      localStorage.setItem(KEY, sid);
+    if (!currentSessionId) {
+      currentSessionId = 'sess-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36);
     }
-    return sid;
+    return currentSessionId;
   }
 
   function setDisabled(state) {
@@ -414,12 +473,37 @@
         return 'Đã nhận.';
       })();
 
-      // Render simple formatting: newline -> <br>
-      const html = formatted.replace(/\n/g, '<br>');
-      addMessage(html, 'bot', true);
+      // Clean up và format text: loại bỏ dấu * markdown, chuyển newline -> <br>
+      let cleaned = formatted
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold** -> <strong>
+        .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic* -> <em>
+        .replace(/\n/g, '<br>') // newline -> <br>
+        .replace(/\*{2,}/g, '') // Loại bỏ các dấu * thừa
+        .replace(/\*([^*\n]+)\*/g, '$1'); // Loại bỏ * đơn lẻ còn sót
+      
+      addMessage(cleaned, 'bot', true);
     } catch (err) {
-      addMessage('Lỗi kết nối, thử lại.', 'bot');
-      console.error(err);
+      console.error('Fetch error:', err);
+      
+      // Xử lý lỗi CORS cụ thể
+      if (err.message && err.message.includes('CORS')) {
+        const isFileProtocol = window.location.protocol === 'file:';
+        let errorMsg = 'Lỗi CORS: Không thể kết nối đến server.';
+        if (isFileProtocol) {
+          errorMsg += '<br><br><strong>Giải pháp:</strong><br>';
+          errorMsg += 'Vui lòng chạy trang web qua local server:<br>';
+          errorMsg += '• Python: <code>python -m http.server 8000</code><br>';
+          errorMsg += '• Node.js: <code>npx serve .</code><br>';
+          errorMsg += '• Sau đó mở: <code>http://localhost:8000</code>';
+        } else {
+          errorMsg += '<br><br>Server cần cấu hình CORS headers để cho phép truy cập từ origin này.';
+        }
+        addMessage(errorMsg, 'bot', true);
+      } else if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
+        addMessage('Lỗi kết nối: Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng hoặc URL webhook.', 'bot');
+      } else {
+        addMessage('Lỗi kết nối: ' + (err.message || 'Vui lòng thử lại.'), 'bot');
+      }
     }
     isPending = false;
     setDisabled(false);
@@ -472,7 +556,8 @@
       recognition.onstart = () => {
         recognizing = true;
         permissionGranted = true; // Nếu start được thì đã có permission
-        micBtn.textContent = '🎙️';
+        micBtn.innerHTML = '';
+        micBtn.appendChild(createMicListeningIcon());
         micBtn.classList.add('listening');
         micBtn.disabled = false;
         micBtn.style.opacity = '';
@@ -481,7 +566,8 @@
 
       recognition.onend = () => {
         recognizing = false;
-        micBtn.textContent = '🎤';
+        micBtn.innerHTML = '';
+        micBtn.appendChild(createMicIcon());
         micBtn.classList.remove('listening');
         // Khôi phục disabled state nếu đang pending
         if (isPending) {
@@ -493,7 +579,8 @@
 
       recognition.onerror = (event) => {
         recognizing = false;
-        micBtn.textContent = '🎤';
+        micBtn.innerHTML = '';
+        micBtn.appendChild(createMicIcon());
         micBtn.classList.remove('listening');
         console.error('Speech recognition error:', event.error);
         
