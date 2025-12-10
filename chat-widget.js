@@ -441,8 +441,37 @@
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
 
+      let permissionGranted = false;
+      let permissionChecked = false;
+
+      // Kiểm tra permission trước (nếu trình duyệt hỗ trợ Permissions API)
+      async function checkMicrophonePermission() {
+        if (permissionChecked) return permissionGranted;
+        
+        if (navigator.permissions && navigator.permissions.query) {
+          try {
+            const result = await navigator.permissions.query({ name: 'microphone' });
+            permissionGranted = result.state === 'granted';
+            permissionChecked = true;
+            
+            // Lắng nghe thay đổi permission
+            result.onchange = () => {
+              permissionGranted = result.state === 'granted';
+            };
+            
+            return permissionGranted;
+          } catch (err) {
+            // Permissions API không hỗ trợ hoặc lỗi, tiếp tục với cách khác
+            console.log('Permissions API not available, will request on first use');
+          }
+        }
+        permissionChecked = true;
+        return false; // Chưa biết, sẽ yêu cầu khi dùng
+      }
+
       recognition.onstart = () => {
         recognizing = true;
+        permissionGranted = true; // Nếu start được thì đã có permission
         micBtn.textContent = '🎙️';
         micBtn.classList.add('listening');
         micBtn.disabled = false;
@@ -467,10 +496,17 @@
         micBtn.textContent = '🎤';
         micBtn.classList.remove('listening');
         console.error('Speech recognition error:', event.error);
-        // Hiển thị thông báo lỗi nếu cần
+        
+        // Xử lý các lỗi khác nhau
         if (event.error === 'not-allowed') {
-          addMessage('Vui lòng cho phép sử dụng microphone.', 'bot');
+          permissionGranted = false;
+          addMessage('Vui lòng cho phép sử dụng microphone trong cài đặt trình duyệt.', 'bot');
+        } else if (event.error === 'no-speech') {
+          // Không có giọng nói, không cần thông báo
+        } else if (event.error === 'aborted') {
+          // Người dùng dừng, không cần thông báo
         }
+        
         // Khôi phục disabled state nếu đang pending
         if (isPending) {
           micBtn.disabled = true;
@@ -490,7 +526,7 @@
         }
       };
 
-      micBtn.onclick = (e) => {
+      micBtn.onclick = async (e) => {
         e.preventDefault();
         e.stopPropagation();
         
@@ -507,6 +543,9 @@
             console.error('Error stopping recognition:', err);
           }
         } else {
+          // Kiểm tra permission trước (nếu chưa check)
+          await checkMicrophonePermission();
+          
           // Bắt đầu nhận diện
           try {
             recognition.start();
@@ -514,14 +553,24 @@
             console.error('Error starting recognition:', err);
             if (err.name === 'InvalidStateError') {
               // Recognition đã đang chạy, thử dừng và bắt đầu lại
-              recognition.stop();
+              try {
+                recognition.stop();
+              } catch (stopErr) {
+                // Ignore stop error
+              }
               setTimeout(() => {
                 try {
                   recognition.start();
                 } catch (e) {
                   console.error('Error restarting recognition:', e);
+                  if (e.name !== 'InvalidStateError') {
+                    addMessage('Không thể khởi động voice input. Vui lòng thử lại.', 'bot');
+                  }
                 }
-              }, 100);
+              }, 200);
+            } else if (err.name === 'NotAllowedError' || err.message?.includes('not allowed')) {
+              permissionGranted = false;
+              addMessage('Vui lòng cho phép sử dụng microphone.', 'bot');
             }
           }
         }
