@@ -5,10 +5,9 @@
     webhookUrl: 'https://bsrassistant-bsrqn.msappproxy.net/webhook/ca181ac5-1b33-4e41-bc32-9b2e07347f3f/chat',
     title: 'Trợ lý ảo AI (Bản thử nghiệm)',
     lang: 'vi-VN',
-    primaryColor: '#16a34a' // Màu xanh lá cây BSR
+    primaryColor: '#16a34a' 
   };
 
-  // Load Google Fonts cho font đẹp hơn
   const fontLink = document.createElement('link');
   fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
   fontLink.rel = 'stylesheet';
@@ -296,7 +295,7 @@
   document.body.appendChild(toggleBtn);
   document.body.appendChild(box);
 
-  // Tạo SVG icon mic hiện đại
+
   function createMicIcon(isListening = false) {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
@@ -309,7 +308,7 @@
     return svg;
   }
 
-  // Tạo SVG icon mic đang nghe (với sóng)
+
   function createMicListeningIcon() {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
@@ -326,8 +325,7 @@
   const input = box.querySelector('#n8n-embed-text');
   const sendBtn = box.querySelector('#n8n-embed-send');
   const micBtn = box.querySelector('#n8n-embed-mic');
-  
-  // Thêm icon mic vào button
+
   micBtn.appendChild(createMicIcon());
   
   let typingEl = null;
@@ -401,7 +399,7 @@
     messages.scrollTop = messages.scrollHeight;
   }
 
-  // Tạo sessionId mới mỗi lần refresh trang (không lưu vào localStorage)
+  // Tạo sessionId mới mỗi lần refresh trang 
   let currentSessionId = null;
   function getSessionId() {
     if (!currentSessionId) {
@@ -413,8 +411,7 @@
   function setDisabled(state) {
     input.disabled = state;
     sendBtn.disabled = state;
-    // Luôn cho phép micBtn hoạt động để có thể bắt đầu/dừng recognition
-    // Chỉ disable khi đang pending và không đang nghe (để tránh bắt đầu mới khi đang chờ)
+
     if (state && !recognizing) {
       micBtn.disabled = true;
       micBtn.style.opacity = '0.7';
@@ -473,19 +470,19 @@
         return 'Đã nhận.';
       })();
 
-      // Clean up và format text: loại bỏ dấu * markdown, chuyển newline -> <br>
+   
       let cleaned = formatted
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold** -> <strong>
-        .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic* -> <em>
-        .replace(/\n/g, '<br>') // newline -> <br>
-        .replace(/\*{2,}/g, '') // Loại bỏ các dấu * thừa
-        .replace(/\*([^*\n]+)\*/g, '$1'); // Loại bỏ * đơn lẻ còn sót
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+        .replace(/\*(.*?)\*/g, '<em>$1</em>') 
+        .replace(/\n/g, '<br>') 
+        .replace(/\*{2,}/g, '') 
+        .replace(/\*([^*\n]+)\*/g, '$1'); 
       
       addMessage(cleaned, 'bot', true);
     } catch (err) {
       console.error('Fetch error:', err);
       
-      // Xử lý lỗi CORS cụ thể
+      // Xử lý lỗi CORS 
       if (err.message && err.message.includes('CORS')) {
         const isFileProtocol = window.location.protocol === 'file:';
         let errorMsg = 'Lỗi CORS: Không thể kết nối đến server.';
@@ -528,7 +525,7 @@
       let permissionGranted = false;
       let permissionChecked = false;
 
-      // Kiểm tra permission trước (nếu trình duyệt hỗ trợ Permissions API)
+      // Kiểm tra permission 
       async function checkMicrophonePermission() {
         if (permissionChecked) return permissionGranted;
         
@@ -545,17 +542,17 @@
             
             return permissionGranted;
           } catch (err) {
-            // Permissions API không hỗ trợ hoặc lỗi, tiếp tục với cách khác
+            // Permissions API không hỗ trợ hoặc lỗi
             console.log('Permissions API not available, will request on first use');
           }
         }
         permissionChecked = true;
-        return false; // Chưa biết, sẽ yêu cầu khi dùng
+        return false; 
       }
 
       recognition.onstart = () => {
         recognizing = true;
-        permissionGranted = true; // Nếu start được thì đã có permission
+        permissionGranted = true; 
         micBtn.innerHTML = '';
         micBtn.appendChild(createMicListeningIcon());
         micBtn.classList.add('listening');
@@ -569,7 +566,7 @@
         micBtn.innerHTML = '';
         micBtn.appendChild(createMicIcon());
         micBtn.classList.remove('listening');
-        // Khôi phục disabled state nếu đang pending
+        
         if (isPending) {
           micBtn.disabled = true;
           micBtn.style.opacity = '0.7';
@@ -584,17 +581,17 @@
         micBtn.classList.remove('listening');
         console.error('Speech recognition error:', event.error);
         
-        // Xử lý các lỗi khác nhau
+      
         if (event.error === 'not-allowed') {
           permissionGranted = false;
           addMessage('Vui lòng cho phép sử dụng microphone trong cài đặt trình duyệt.', 'bot');
         } else if (event.error === 'no-speech') {
-          // Không có giọng nói, không cần thông báo
+        
         } else if (event.error === 'aborted') {
-          // Người dùng dừng, không cần thông báo
+         
         }
         
-        // Khôi phục disabled state nếu đang pending
+        
         if (isPending) {
           micBtn.disabled = true;
           micBtn.style.opacity = '0.7';
@@ -606,7 +603,7 @@
         if (event.results.length > 0 && event.results[0].length > 0) {
           const transcript = event.results[0][0].transcript;
           input.value = transcript;
-          // Tự động gửi sau khi nhận diện xong
+      
           if (transcript.trim()) {
             sendMessage(transcript);
           }
@@ -617,12 +614,12 @@
         e.preventDefault();
         e.stopPropagation();
         
-        // Nếu đang pending và không đang nghe, không cho phép bắt đầu mới
+        
         if (isPending && !recognizing) {
           return;
         }
         
-        // Nếu đang nghe, dừng lại
+    
         if (recognizing) {
           try {
             recognition.stop();
@@ -633,13 +630,13 @@
           // Kiểm tra permission trước (nếu chưa check)
           await checkMicrophonePermission();
           
-          // Bắt đầu nhận diện
+         
           try {
             recognition.start();
           } catch (err) {
             console.error('Error starting recognition:', err);
             if (err.name === 'InvalidStateError') {
-              // Recognition đã đang chạy, thử dừng và bắt đầu lại
+              // Recognition 
               try {
                 recognition.stop();
               } catch (stopErr) {
