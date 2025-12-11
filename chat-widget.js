@@ -550,6 +550,11 @@
         return false; 
       }
 
+      // Đảm bảo micBtn không bị disable khi khởi tạo
+      micBtn.disabled = false;
+      micBtn.style.opacity = '';
+      micBtn.style.cursor = 'pointer';
+
       recognition.onstart = () => {
         recognizing = true;
         permissionGranted = true; 
@@ -614,29 +619,40 @@
         e.preventDefault();
         e.stopPropagation();
         
+        console.log('Mic button clicked', { isPending, recognizing, disabled: micBtn.disabled });
         
+        // Nếu đang pending và không đang nghe, không cho phép bắt đầu mới
         if (isPending && !recognizing) {
+          console.log('Blocked: isPending and not recognizing');
           return;
         }
         
-    
+        // Nếu đang nghe, dừng lại
         if (recognizing) {
+          console.log('Stopping recognition');
           try {
             recognition.stop();
           } catch (err) {
             console.error('Error stopping recognition:', err);
           }
         } else {
+          console.log('Starting recognition');
           // Kiểm tra permission trước (nếu chưa check)
           await checkMicrophonePermission();
           
-         
+          // Đảm bảo button không bị disable
+          micBtn.disabled = false;
+          micBtn.style.opacity = '';
+          micBtn.style.cursor = 'pointer';
+          
           try {
             recognition.start();
+            console.log('Recognition started successfully');
           } catch (err) {
             console.error('Error starting recognition:', err);
             if (err.name === 'InvalidStateError') {
-              // Recognition 
+              // Recognition đã đang chạy, thử dừng và bắt đầu lại
+              console.log('InvalidStateError, trying to restart');
               try {
                 recognition.stop();
               } catch (stopErr) {
@@ -645,6 +661,7 @@
               setTimeout(() => {
                 try {
                   recognition.start();
+                  console.log('Recognition restarted successfully');
                 } catch (e) {
                   console.error('Error restarting recognition:', e);
                   if (e.name !== 'InvalidStateError') {
@@ -655,6 +672,8 @@
             } else if (err.name === 'NotAllowedError' || err.message?.includes('not allowed')) {
               permissionGranted = false;
               addMessage('Vui lòng cho phép sử dụng microphone.', 'bot');
+            } else {
+              addMessage('Lỗi khởi động voice input: ' + (err.message || err.name), 'bot');
             }
           }
         }
@@ -663,10 +682,25 @@
       console.error('Error initializing speech recognition:', err);
       micBtn.disabled = true;
       micBtn.title = 'Không thể khởi tạo voice input';
+      micBtn.style.opacity = '0.5';
+      // Hiển thị thông báo lỗi
+      const errorIcon = document.createElement('span');
+      errorIcon.textContent = '⚠️';
+      errorIcon.title = 'Voice input không khả dụng: ' + err.message;
+      micBtn.innerHTML = '';
+      micBtn.appendChild(errorIcon);
     }
   } else {
+    console.warn('Speech Recognition API not supported in this browser');
     micBtn.disabled = true;
     micBtn.title = 'Trình duyệt không hỗ trợ voice';
+    micBtn.style.opacity = '0.5';
+    // Thay icon bằng thông báo không hỗ trợ
+    micBtn.innerHTML = '';
+    const unsupportedIcon = document.createElement('span');
+    unsupportedIcon.textContent = '🚫';
+    unsupportedIcon.title = 'Trình duyệt không hỗ trợ voice input';
+    micBtn.appendChild(unsupportedIcon);
   }
 })(); 
 
