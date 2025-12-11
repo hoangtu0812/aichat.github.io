@@ -586,21 +586,50 @@
         micBtn.classList.remove('listening');
         console.error('Speech recognition error:', event.error);
         
-      
+        // Xử lý các lỗi khác nhau
         if (event.error === 'not-allowed') {
           permissionGranted = false;
-          addMessage('Vui lòng cho phép sử dụng microphone trong cài đặt trình duyệt.', 'bot');
+          const browser = navigator.userAgent.includes('Chrome') ? 'Chrome' : 
+                         navigator.userAgent.includes('Edge') ? 'Edge' : 
+                         navigator.userAgent.includes('Firefox') ? 'Firefox' : 'trình duyệt';
+          
+          let helpMsg = 'Microphone đã bị chặn. ';
+          if (browser === 'Chrome' || browser === 'Edge') {
+            helpMsg += '<br><br><strong>Cách cho phép:</strong><br>';
+            helpMsg += '1. Click vào icon 🔒 hoặc 🛡️ ở thanh địa chỉ<br>';
+            helpMsg += '2. Tìm mục "Microphone" → chọn "Allow"<br>';
+            helpMsg += '3. Refresh trang và thử lại<br>';
+            helpMsg += '<br>Hoặc vào: Settings → Privacy → Site Settings → Microphone';
+          } else if (browser === 'Firefox') {
+            helpMsg += '<br><br><strong>Cách cho phép:</strong><br>';
+            helpMsg += '1. Click vào icon 🛡️ ở thanh địa chỉ<br>';
+            helpMsg += '2. Chọn "Allow" cho Microphone<br>';
+            helpMsg += '3. Refresh trang và thử lại';
+          } else {
+            helpMsg += '<br><br>Vui lòng vào cài đặt trình duyệt và cho phép microphone cho website này.';
+          }
+          addMessage(helpMsg, 'bot', true);
         } else if (event.error === 'no-speech') {
-        
+          // Không có giọng nói, không cần thông báo
+          console.log('No speech detected');
         } else if (event.error === 'aborted') {
-         
+          // Người dùng dừng, không cần thông báo
+          console.log('Recognition aborted');
+        } else {
+          // Lỗi khác
+          console.error('Other recognition error:', event.error);
         }
         
-        
+        // Khôi phục disabled state nếu đang pending
         if (isPending) {
           micBtn.disabled = true;
           micBtn.style.opacity = '0.7';
           micBtn.style.cursor = 'not-allowed';
+        } else {
+          // Đảm bảo button có thể click lại
+          micBtn.disabled = false;
+          micBtn.style.opacity = '';
+          micBtn.style.cursor = 'pointer';
         }
       };
 
@@ -671,7 +700,20 @@
               }, 200);
             } else if (err.name === 'NotAllowedError' || err.message?.includes('not allowed')) {
               permissionGranted = false;
-              addMessage('Vui lòng cho phép sử dụng microphone.', 'bot');
+              const browser = navigator.userAgent.includes('Chrome') ? 'Chrome' : 
+                             navigator.userAgent.includes('Edge') ? 'Edge' : 
+                             navigator.userAgent.includes('Firefox') ? 'Firefox' : 'trình duyệt';
+              
+              let helpMsg = 'Microphone bị chặn. ';
+              if (browser === 'Chrome' || browser === 'Edge') {
+                helpMsg += '<br><br><strong>Cách cho phép:</strong><br>';
+                helpMsg += '1. Click icon 🔒 ở thanh địa chỉ<br>';
+                helpMsg += '2. Tìm "Microphone" → chọn "Allow"<br>';
+                helpMsg += '3. Refresh trang (F5)';
+              } else {
+                helpMsg += 'Vui lòng vào cài đặt trình duyệt và cho phép microphone.';
+              }
+              addMessage(helpMsg, 'bot', true);
             } else {
               addMessage('Lỗi khởi động voice input: ' + (err.message || err.name), 'bot');
             }
